@@ -32,6 +32,12 @@ O Pages atualiza em ~1 minuto. Vídeo agendado só aparece depois que o YouTube 
 - O botão **Status** baixa o cartão só ao tocar, abre a folha de compartilhamento com o arquivo (`navigator.share` com arquivos) e copia a legenda (mensagem + link do YouTube). Se o aparelho não compartilha arquivos, salva a imagem. No WhatsApp: escolha “Status”/“Meu status”, toque em adicionar legenda e cole.
 - Para mudar o desenho, edite `~/estudio-youtube/gerar_cartoes.py` e aumente `VERSAO_DESENHO` (refaz todos).
 
+## Compartilhar uma série inteira (fase 4)
+- Cada série (playlist **pública** do canal) com **2 ou mais vídeos públicos** ganha, no cabeçalho (e quando o chip dela está ativo), o bloco “Compartilhe a série inteira”: **Compartilhar**, **WhatsApp**, **Copiar texto**, **Copiar link** e **Status**, com a mesma lógica dos botões de vídeo (`acoes()` no `app.js`). Série com 1 vídeo não mostra o bloco.
+- Mensagem editável: `📖 *<título da série>* — <N> vídeos do canal Cristão Integral. <1º parágrafo da descrição da playlist, em frases inteiras, até ~300 caracteres>. Assista na ordem: <link da playlist>`. O link é sempre o da playlist no YouTube (`https://www.youtube.com/playlist?list=<id>`); só ele vai na mensagem (o WhatsApp só faz preview do primeiro link).
+- `videos.json` → cada item de `series` traz `id`, `titulo`, `descricao`, `total` (só vídeos públicos, não o `itemCount` da API) e `url`. Playlists privadas/não listadas nunca entram.
+- Cartão de status da série: `cartoes/serie-<id>.jpg` (1080×1920, ~110–230 KB: título exato, “N vídeos”, colagem de 2–4 miniaturas, “Série completa no canal Cristão Integral”); chave `serie-<id>` no `cartoes/index.json`. Só para séries com `total >= 2`; é baixado só ao tocar em Status. Mudou título, total ou miniaturas → o `publicar.py site` refaz só aquele cartão; série nova entra sozinha; série removida ou com menos de 2 vídeos perde o cartão.
+
 ## Arquivos
 - `index.html`, `style.css`, `app.js`: a página (sem dependências, sem rastreadores).
 - `videos.json`: gerado pelo `gerar_site.py` (não edite à mão). `cartoes/`: gerado pelo `gerar_cartoes.py`.
@@ -39,4 +45,4 @@ O Pages atualiza em ~1 minuto. Vídeo agendado só aparece depois que o YouTube 
 - `manifest.webmanifest`, `icons/`: instalação na tela inicial. `fonts/`: Playfair Display (licença OFL).
 
 ## Fases seguintes (ver Estúdio/PLANO-COMPARTILHAMENTO.md)
-- Ideia futura: vídeo vertical publicável no Status (hoje o site só lista vídeos do YouTube); cartões 1080×1350 para o Instagram.
+- Ideia futura: “montar uma lista” (marcar vários vídeos e gerar uma mensagem só); vídeo vertical publicável no Status (hoje o site só lista vídeos do YouTube); cartões 1080×1350 para o Instagram.
