@@ -5,7 +5,10 @@ Endereço: https://paulohenriquegama.github.io/cristao-integral/
 
 Este repositório é **público**: nunca coloque aqui segredos, rascunhos, vídeos privados/agendados nem dados pessoais.
 
-## Atualizar vídeos e cartões (um comando)
+## Atualização automática (fase 3)
+Quando um vídeo do canal passa a ser público (na hora ou por agendamento), a página e o cartão dele entram sozinhos: um agente local no Mac (`com.cristaointegral.site`, a cada 30 min e ao ligar) roda `publicar.py site`, que só faz commit/push se houver novidade. Também roda ao fim de `publicar.py publicar`. Para testar sem publicar: `publicar.py site --simular`. Log e como ligar/desligar o agente: `~/estudio-youtube/LEIA-ME.md`. O Mac precisa estar ligado; o que for publicado com ele desligado entra assim que ele ligar.
+
+## Atualizar vídeos e cartões (manual, se precisar)
 Os geradores ficam fora deste repositório (usam o login do canal):
 
 ```bash
@@ -36,5 +39,4 @@ O Pages atualiza em ~1 minuto. Vídeo agendado só aparece depois que o YouTube 
 - `manifest.webmanifest`, `icons/`: instalação na tela inicial. `fonts/`: Playfair Display (licença OFL).
 
 ## Fases seguintes (ver Estúdio/PLANO-COMPARTILHAMENTO.md)
-- Comando `site` no `publicar.py` (rodar o `atualizar_site.sh --publicar` no fim de cada publicação).
 - Ideia futura: vídeo vertical publicável no Status (hoje o site só lista vídeos do YouTube); cartões 1080×1350 para o Instagram.
