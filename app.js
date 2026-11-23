@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var dados = null, serieAtiva = '', termo = '';
+  var dados = null, cartoes = {}, serieAtiva = '', termo = '';
   var podeCompartilhar = typeof navigator.share === 'function';
 
   function semAcento(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
@@ -17,9 +17,9 @@
   function mensagem(v) { return (v.descricao || v.titulo) + '\n\n' + link(v); }
 
   var tt;
-  function aviso(txt) {
+  function aviso(txt, ms) {
     var a = $('aviso'); a.textContent = txt; a.classList.add('on');
-    clearTimeout(tt); tt = setTimeout(function () { a.classList.remove('on'); }, 2200);
+    clearTimeout(tt); tt = setTimeout(function () { a.classList.remove('on'); }, ms || 2200);
   }
   function copiar(txt, ok) {
     function fallback() {
@@ -38,6 +38,76 @@
 
   function botao(rotulo, cls, fn) {
     var b = el('button', 'btn ' + (cls || ''), rotulo); b.type = 'button'; b.addEventListener('click', fn); return b;
+  }
+
+  // ---- Status do WhatsApp: compartilha o cartão vertical (arquivo) e copia a legenda ----
+  var CARTAO_AVISO = 'Legenda copiada. No status, toque em “Adicionar legenda” e cole.';
+  function urlCartao(v) { return 'cartoes/' + v.id + '.jpg?v=' + encodeURIComponent((cartoes[v.id] || {}).hash || ''); }
+
+  function botaoStatus(v, ta) {
+    var b = botao('Status', 'largo', function () {});
+    if (!cartoes[v.id]) {
+      b.disabled = true; b.textContent = 'Status (sem cartão)'; b.title = 'Este vídeo ainda não tem cartão para o status';
+      return b;
+    }
+    var arquivoP = null, arquivo = null;
+    function carrega() { // o cartão só é baixado quando o botão é tocado
+      if (!arquivoP) {
+        arquivoP = fetch(urlCartao(v)).then(function (r) {
+          if (!r.ok) throw new Error('http ' + r.status);
+          return r.blob();
+        }).then(function (blob) {
+          arquivo = new File([blob], 'cristao-integral-' + v.id + '.jpg', { type: 'image/jpeg' });
+          return arquivo;
+        });
+        arquivoP.catch(function () { arquivoP = null; });
+      }
+      return arquivoP;
+    }
+    function salvar(f) {
+      var u = URL.createObjectURL(f), a = document.createElement('a');
+      a.href = u; a.download = f.name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    }
+    var rotulo = 'Status';
+    function normal() { b.textContent = rotulo; b.classList.remove('prim'); b.disabled = false; }
+    function enviar(f, legenda) {
+      var dados = { files: [f], text: legenda };
+      if (navigator.canShare && navigator.canShare({ files: [f] })) {
+        return navigator.share(dados).then(function () { aviso(CARTAO_AVISO, 4500); });
+      }
+      salvar(f); aviso('Imagem salva. ' + CARTAO_AVISO, 5000);
+      return Promise.resolve();
+    }
+    b.addEventListener('pointerdown', function () { if (!arquivo) carrega().catch(function () {}); });
+    b.addEventListener('click', function () {
+      var legenda = ta.value;
+      copiar(legenda, 'Legenda copiada'); // dentro do toque, antes de qualquer espera
+      if (arquivo) { // já baixado: compartilha direto, ainda dentro do toque
+        enviar(arquivo, legenda).then(normal, erro); return;
+      }
+      b.disabled = true; b.textContent = 'Preparando cartão…';
+      carrega().then(function (f) {
+        normal();
+        return enviar(f, legenda);
+      }).catch(function (e) {
+        normal();
+        if (e && e.name === 'NotAllowedError' && arquivo) { // o navegador exigiu um novo toque depois do download
+          b.textContent = 'Toque de novo para enviar'; b.classList.add('prim');
+          aviso('Cartão pronto. Toque de novo em Status para enviar.', 4000);
+          setTimeout(normal, 15000);
+          return;
+        }
+        erro(e);
+      });
+    });
+    function erro(e) {
+      normal();
+      if (e && e.name === 'AbortError') return; // fechou a folha de compartilhamento
+      if (e && e.name === 'NotAllowedError' && arquivo) { b.textContent = 'Toque de novo para enviar'; b.classList.add('prim'); return; }
+      aviso('Não consegui montar o cartão. Use “Copiar texto” e tente de novo.', 4000);
+    }
+    return b;
   }
 
   function cartao(v) {
@@ -66,8 +136,7 @@
     bs.appendChild(zap);
     bs.appendChild(botao('Copiar texto', '', function () { copiar(ta.value, 'Texto copiado'); }));
     bs.appendChild(botao('Copiar link', '', function () { copiar(link(v), 'Link copiado'); }));
-    var st = botao('Status (em breve)', 'largo', function () {}); st.disabled = true; st.title = 'Cartão para o Status do WhatsApp: em breve';
-    bs.appendChild(st);
+    bs.appendChild(botaoStatus(v, ta));
     corpo.appendChild(bs);
 
     var d = el('details', 'msg'); d.appendChild(el('summary', '', 'Editar mensagem')); d.appendChild(ta);
@@ -122,7 +191,10 @@
 
   $('busca').addEventListener('input', function (e) { termo = e.target.value; desenha(); });
 
+  var cartoesP = fetch('cartoes/index.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
   fetch('videos.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (d) {
+    return cartoesP.then(function (c) { cartoes = c || {}; return d; });
+  }).then(function (d) {
     dados = d; chips(); desenha();
     $('atualizado').textContent = 'Lista atualizada em ' + dataBr(d.gerado_em) + '.';
   }).catch(function () {
