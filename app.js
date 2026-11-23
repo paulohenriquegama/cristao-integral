@@ -15,6 +15,13 @@
   }
   function link(v) { return 'https://youtu.be/' + v.id; }
   function mensagem(v) { return (v.descricao || v.titulo) + '\n\n' + link(v); }
+  // série (playlist): só o link da playlist vai na mensagem (o WhatsApp só faz preview do primeiro link)
+  function mensagemSerie(s) {
+    var d = (s.descricao || '').trim();
+    if (d && !/[.!?…]$/.test(d)) d += '.';
+    return '📖 *' + s.titulo + '* — ' + s.total + ' vídeos do canal Cristão Integral. ' + (d ? d + ' ' : '') + 'Assista na ordem: ' + s.url;
+  }
+  function compartilhavel(s) { return s.total >= 2 && !!s.url; } // série de 1 vídeo = compartilhar o próprio vídeo
 
   var tt;
   function aviso(txt, ms) {
@@ -42,22 +49,22 @@
 
   // ---- Status do WhatsApp: compartilha o cartão vertical (arquivo) e copia a legenda ----
   var CARTAO_AVISO = 'Legenda copiada. No status, toque em “Adicionar legenda” e cole.';
-  function urlCartao(v) { return 'cartoes/' + v.id + '.jpg?v=' + encodeURIComponent((cartoes[v.id] || {}).hash || ''); }
+  function urlCartao(k) { return 'cartoes/' + k + '.jpg?v=' + encodeURIComponent((cartoes[k] || {}).hash || ''); }
 
-  function botaoStatus(v, ta) {
+  function botaoStatus(k, ta) { // k = chave do cartão: id do vídeo ou 'serie-<id>'
     var b = botao('Status', 'largo', function () {});
-    if (!cartoes[v.id]) {
-      b.disabled = true; b.textContent = 'Status (sem cartão)'; b.title = 'Este vídeo ainda não tem cartão para o status';
+    if (!cartoes[k]) {
+      b.disabled = true; b.textContent = 'Status (sem cartão)'; b.title = 'Ainda não há cartão para o status';
       return b;
     }
     var arquivoP = null, arquivo = null;
     function carrega() { // o cartão só é baixado quando o botão é tocado
       if (!arquivoP) {
-        arquivoP = fetch(urlCartao(v)).then(function (r) {
+        arquivoP = fetch(urlCartao(k)).then(function (r) {
           if (!r.ok) throw new Error('http ' + r.status);
           return r.blob();
         }).then(function (blob) {
-          arquivo = new File([blob], 'cristao-integral-' + v.id + '.jpg', { type: 'image/jpeg' });
+          arquivo = new File([blob], 'cristao-integral-' + k + '.jpg', { type: 'image/jpeg' });
           return arquivo;
         });
         arquivoP.catch(function () { arquivoP = null; });
@@ -110,18 +117,10 @@
     return b;
   }
 
-  function cartao(v) {
-    var c = el('article', 'cartao');
-    var a = el('a', 'mini-img'); a.href = link(v); a.target = '_blank'; a.rel = 'noopener'; a.setAttribute('aria-label', 'Assistir no YouTube: ' + v.titulo);
-    var img = el('img'); img.src = v.miniatura; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
-    a.appendChild(img); a.appendChild(el('span', 'dur', dur(v.duracao)));
-    c.appendChild(a);
-
-    var corpo = el('div', 'corpo');
-    corpo.appendChild(el('h3', 'titulo', v.titulo));
-    corpo.appendChild(el('p', 'meta', dur(v.duracao) + ' · ' + dataBr(v.data)));
-
-    var ta = el('textarea'); ta.value = mensagem(v); ta.rows = 7; ta.setAttribute('aria-label', 'Mensagem para enviar');
+  // Ações de compartilhar (vídeo ou série): mensagem editável, Compartilhar, WhatsApp, Copiar texto, Copiar link, Status
+  function acoes(o) {
+    var box = el('div', 'acoes');
+    var ta = el('textarea'); ta.value = o.msg; ta.rows = 7; ta.setAttribute('aria-label', 'Mensagem para enviar');
     var zap = el('a', 'btn zap', 'WhatsApp'); zap.target = '_blank'; zap.rel = 'noopener';
     function atualizaZap() { zap.href = 'https://wa.me/?text=' + encodeURIComponent(ta.value); }
     atualizaZap(); ta.addEventListener('input', atualizaZap);
@@ -135,12 +134,41 @@
     }
     bs.appendChild(zap);
     bs.appendChild(botao('Copiar texto', '', function () { copiar(ta.value, 'Texto copiado'); }));
-    bs.appendChild(botao('Copiar link', '', function () { copiar(link(v), 'Link copiado'); }));
-    bs.appendChild(botaoStatus(v, ta));
-    corpo.appendChild(bs);
+    bs.appendChild(botao('Copiar link', '', function () { copiar(o.link, 'Link copiado'); }));
+    bs.appendChild(botaoStatus(o.chave, ta));
+    box.appendChild(bs);
 
     var d = el('details', 'msg'); d.appendChild(el('summary', '', 'Editar mensagem')); d.appendChild(ta);
-    corpo.appendChild(d);
+    box.appendChild(d);
+    return box;
+  }
+
+  function cabecalhoSerie(s, qtd) {
+    var h = el('h2', '', s.titulo); h.appendChild(document.createTextNode(' ')); h.appendChild(el('span', 'qtd', '(' + qtd + ')'));
+    return h;
+  }
+
+  // Bloco "compartilhar a série inteira" (só séries com 2+ vídeos públicos)
+  function blocoSerie(s) {
+    if (!compartilhavel(s)) return null;
+    var b = el('div', 'serie-acoes');
+    b.appendChild(el('p', 'serie-dica', 'Compartilhe a série inteira (' + s.total + ' vídeos) com um link só.'));
+    b.appendChild(acoes({ msg: mensagemSerie(s), link: s.url, chave: 'serie-' + s.id }));
+    return b;
+  }
+
+  function cartao(v) {
+    var c = el('article', 'cartao');
+    var a = el('a', 'mini-img'); a.href = link(v); a.target = '_blank'; a.rel = 'noopener'; a.setAttribute('aria-label', 'Assistir no YouTube: ' + v.titulo);
+    var img = el('img'); img.src = v.miniatura; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
+    a.appendChild(img); a.appendChild(el('span', 'dur', dur(v.duracao)));
+    c.appendChild(a);
+
+    var corpo = el('div', 'corpo');
+    corpo.appendChild(el('h3', 'titulo', v.titulo));
+    corpo.appendChild(el('p', 'meta', dur(v.duracao) + ' · ' + dataBr(v.data)));
+
+    corpo.appendChild(acoes({ msg: mensagem(v), link: link(v), chave: v.id }));
     c.appendChild(corpo);
     return c;
   }
@@ -156,8 +184,17 @@
     if (!vs.length) { r.textContent = ''; lista.appendChild(el('p', 'vazio', 'Nenhum vídeo encontrado.')); return; }
 
     if (t || serieAtiva) {
-      var nomeSerie = serieAtiva ? dados.series.filter(function (s) { return s.id === serieAtiva; })[0].titulo : '';
+      var serie = serieAtiva ? dados.series.filter(function (s) { return s.id === serieAtiva; })[0] : null;
+      var nomeSerie = serie ? serie.titulo : '';
       r.textContent = vs.length + (vs.length === 1 ? ' vídeo' : ' vídeos') + (nomeSerie ? ' em “' + nomeSerie + '”' : '') + (t ? ' para “' + termo.trim() + '”' : '') + ' · mais novos primeiro';
+      if (serie && !t) { // série escolhida no chip: mostra o cabeçalho com os botões de compartilhar a série
+        var secA = el('section', 'serie'); secA.id = 's-' + serie.id;
+        secA.appendChild(cabecalhoSerie(serie, vs.length));
+        var bsA = blocoSerie(serie); if (bsA) secA.appendChild(bsA);
+        vs.forEach(function (v) { secA.appendChild(cartao(v)); });
+        lista.appendChild(secA);
+        return;
+      }
       vs.forEach(function (v) { lista.appendChild(cartao(v)); });
       return;
     }
@@ -166,8 +203,8 @@
       var seus = vs.filter(function (v) { return v.playlists.indexOf(s.id) >= 0; });
       if (!seus.length) return;
       var sec = el('section', 'serie'); sec.id = 's-' + s.id;
-      var h = el('h2', '', s.titulo); h.appendChild(document.createTextNode(' ')); h.appendChild(el('span', 'qtd', '(' + seus.length + ')'));
-      sec.appendChild(h);
+      sec.appendChild(cabecalhoSerie(s, seus.length));
+      var bsS = blocoSerie(s); if (bsS) sec.appendChild(bsS);
       seus.forEach(function (v) { sec.appendChild(cartao(v)); });
       lista.appendChild(sec);
     });
