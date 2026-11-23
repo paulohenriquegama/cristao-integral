@@ -1,0 +1,16 @@
+{
+  "name": "Cristão Integral — vídeos para compartilhar",
+  "short_name": "Cristão Integral",
+  "description": "Vídeos do canal Cristão Integral, por série, com botões de compartilhar.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f1e6",
+  "theme_color": "#1a3c34",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

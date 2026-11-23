@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cristão Integral — vídeos para compartilhar</title>
+<meta name="description" content="Todos os vídeos do canal Cristão Integral, por série, com botões para compartilhar no WhatsApp com um toque.">
+<meta name="theme-color" content="#1a3c34">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cristão Integral">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:title" content="Cristão Integral — vídeos para compartilhar">
+<meta property="og:description" content="Uma fé que pensa e uma mente que ama a Deus. Todos os vídeos do canal, por série.">
+<meta property="og:image" content="icons/icon-512.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topo">
+  <img class="logo" src="icons/logo-cabecalho.png" alt="Cristão Integral" width="265" height="132">
+  <p class="lema">Uma fé que pensa e uma mente que ama a Deus.</p>
+</header>
+
+<div class="barra">
+  <label class="busca">
+    <span class="sr">Buscar vídeos</span>
+    <input id="busca" type="search" placeholder="Buscar por título ou tema…" autocomplete="off" enterkeyhint="search">
+  </label>
+  <nav id="series" class="chips" aria-label="Séries"></nav>
+</div>
+
+<main>
+  <p id="resumo" class="resumo" aria-live="polite"></p>
+  <div id="lista"></div>
+</main>
+
+<footer class="rodape">
+  <p><strong>Como compartilhar:</strong> toque em <em>Compartilhar</em> ou <em>WhatsApp</em>, escolha o grupo e envie. A mensagem já vem pronta e você pode editá-la antes (botão “Editar mensagem”). O link enviado é sempre o do YouTube.</p>
+  <p><strong>Sobre esta página:</strong> página pública do canal <a href="https://www.youtube.com/@cristaointegral" rel="noopener">Cristão Integral</a> no YouTube. Ela também é a página inicial do aplicativo “Estudio Cristao Integral”, de uso exclusivo do dono do canal, que usa a YouTube API Services apenas para enviar e agendar vídeos do próprio canal.</p>
+  <p><a href="privacidade.html">Política de privacidade</a> · <a href="https://www.youtube.com/@cristaointegral" rel="noopener">Canal no YouTube</a></p>
+  <p id="atualizado" class="mini"></p>
+</footer>
+
+<div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>
